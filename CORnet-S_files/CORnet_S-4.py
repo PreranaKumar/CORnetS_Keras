@@ -31,11 +31,11 @@ class CORblock_S:
         self.times = times
         inputs = tf.keras.Input(shape=(224,224,3))
 
-        self.conv_input = tf.keras.layers.Conv2D(self.out_channels, (1,1), padding='SAME', name=layer_name+'_convInp')
-        self.skip = tf.keras.layers.Conv2D(self.out_channels, (1,1), strides=2, padding='SAME', use_bias=False, name=layer_name+'_skip')
-        self.conv1 = tf.keras.layers.Conv2D(self.out_channels*self.scale, (1,1), padding='SAME', use_bias=False, name=layer_name+'_conv1')
-        self.conv2 = tf.keras.layers.Conv2D(self.out_channels*self.scale, (3,3), padding='SAME', strides=1, use_bias=False, name=layer_name+'_conv2')
-        self.conv3 = tf.keras.layers.Conv2D(self.out_channels,(1,1), padding='SAME', use_bias=False, name=layer_name+'_conv3')
+        self.conv_input = Conv2D(self.out_channels, (1,1), padding='SAME', name=layer_name+'_convInp')
+        self.skip = Conv2D(self.out_channels, (1,1), strides=2, padding='SAME', use_bias=False, name=layer_name+'_skip')
+        self.conv1 = Conv2D(self.out_channels*self.scale, (1,1), padding='SAME', use_bias=False, name=layer_name+'_conv1')
+        self.conv2 = Conv2D(self.out_channels*self.scale, (3,3), padding='SAME', strides=1, use_bias=False, name=layer_name+'_conv2')
+        self.conv3 = Conv2D(self.out_channels,(1,1), padding='SAME', use_bias=False, name=layer_name+'_conv3')
 
 
     def CORblock_S_impl(self, input): #Function to implement fwd. pass through layers for diff. timesteps
@@ -74,13 +74,13 @@ class CORblock_S:
 def CORnetS():
     inputs = tf.keras.Input(shape=(224,224,3))
     # V1 layers
-    x = tf.keras.layers.Conv2D(64, (7,7), strides=2, padding='SAME', use_bias=False)(inputs)#Check
-    x = tf.keras.layers.BatchNormalization(axis=-1)(x)
-    x = tf.keras.layers.Activation("relu")(x)
-    x = tf.keras.layers.MaxPooling2D(pool_size=(3, 3), strides=2, padding='SAME')(x)
-    x = tf.keras.layers.Conv2D(64, (3,3), strides=1, padding='SAME', use_bias=False)(x)
-    x = tf.keras.layers.BatchNormalization(axis=-1)(x)
-    x = tf.keras.layers.Activation("relu")(x)
+    x = Conv2D(64, (7,7), strides=2, padding='SAME', use_bias=False)(inputs)#Check
+    x = BatchNormalization(axis=-1)(x)
+    x = Activation("relu")(x)
+    x = MaxPooling2D(pool_size=(3, 3), strides=2, padding='SAME')(x)
+    x = Conv2D(64, (3,3), strides=1, padding='SAME', use_bias=False)(x)
+    x = BatchNormalization(axis=-1)(x)
+    x = Activation("relu")(x)
 
     # weight sharing for V2-V4-IT
     x = CORblock_S(128, layer_name="V2", times=2).CORblock_S_impl(x)
@@ -89,8 +89,11 @@ def CORnetS():
     
     #Average pool and flatten
     x = GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Flatten()(x)
-    x = tf.keras.layers.Dense(1000)(x)
+    x = Flatten()(x)
+    x = Dense(classes)(x)
+    
+    if not from_logits:
+        x = Activation('softmax')(x)
 
     #Create and return model
     model = tf.keras.Model(inputs, x, name='CORnetS')
